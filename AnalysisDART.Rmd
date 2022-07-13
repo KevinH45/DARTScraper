@@ -1,0 +1,171 @@
+---
+title: "Analysis of DebateArt Data"
+author: "BearMan"
+date: '2022-07-13'
+output: html_document
+---
+
+This is hardly a good analysis, I was just playing with the data I collected from a BS4 webscraper. This was also an excuse to practice my (obviously inexperienced) R/stats skills.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Some setup needed:
+
+```{r}
+library(ggplot2)
+
+dartData <- read.csv("DART.csv")
+```
+
+## General
+
+Finding the length of the dataset
+```{r}
+nrow(dartData)
+```
+
+## Analysis of Total Arguments
+
+The favored amount of total arguments is 6 or 3 total rounds. The least favored is two total arguments or one total round.
+
+```{r}
+
+ggplot(data=dartData)+
+  geom_bar(mapping = aes(x=as.factor(Total.Arguments)))+
+  xlab("Total arguments")+
+  ylab("Count")+
+  labs(title="Distribution of Data in Terms of Total Arguments ")
+
+```
+
+
+
+
+## Analysis of Proportion of Arguments
+
+Note that 1/2 is a full forfeit on one side, 0 is a full forfeit on both sides, and 1 is a complete debate. 
+
+```{r}
+
+ggplot(data=dartData)+
+  geom_bar(mapping= aes(x=Proportion.of.Arguments, fill=as.factor(Total.Arguments))) +
+  xlab("Completed Arguments/Total Arguments")+
+  ylab("Count")+
+  labs(title="Count of Proportion of Arguments (with total arguments included)", fill="Total Arguments")
+
+```
+
+The proportion of arguments seems to have some relation with the amount of votes a debate garners. Debates with at least one forfeit have almost double the amount of mean votes when compared to fully completed debates.
+
+
+```{r}
+
+forfeitRows = dartData[dartData$Proportion.of.Arguments<1,]
+mean(forfeitRows$Votes)
+
+nonForfeitRows = dartData[dartData$Proportion.of.Arguments==1,]
+mean(nonForfeitRows$Votes)
+
+```
+
+A majority of debates on DART have at least one forfeit:
+
+```{r}
+nrow(forfeitRows)
+nrow(nonForfeitRows)
+```
+
+## Analysis of Comments
+
+A bar chart of the amount of comments on DART.
+
+```{r}
+ggplot(data=dartData)+
+  geom_bar(mapping = aes(x=Comments))+
+  xlab("Comments")+
+  ylab("Count")+
+  labs(title="Count of Comments")
+
+```
+
+
+Interestingly, the largest amount of comments on a debate is 384, which is far higher than the mean of 18.
+
+```{r}
+
+max(dartData$Comments)
+mean(dartData$Comments)
+```
+
+
+
+## Analysis of Votes
+
+
+First, some simple statistics (mean and max):
+```{r}
+mean(dartData$Votes)
+max(dartData$Votes)
+```
+
+
+
+### Zero Vote Debates
+
+ZVDs make up 6% of all debates. 
+
+```{r}
+ZVD <- dartData[dartData$Votes==0,]
+nonZVD <- dartData[dartData$Votes!=0,]
+nrow(dartData[dartData$Votes==0,]) # Amount
+nrow(dartData[dartData$Votes==0,])/nrow(dartData) # Percentage
+```
+
+
+Is this ZVD problem more prevalent in recent times, or is it an older problem? Since this dataset is ordered in a reverse-chronological fashion, we'll classify the first 500 records as "recent" and everything else as "older".
+
+For recent times:
+
+```{r}
+recentRows <- dartData[c(0:500),] # Grab 500 most recent records
+nrow(recentRows[recentRows$Votes==0,]) # Amount
+nrow(recentRows[recentRows$Votes==0,])/nrow(recentRows) # Percentage
+```
+
+For older times:
+```{r}
+oldRows <- dartData[-c(0:500),] # Grab everything else
+nrow(oldRows[oldRows$Votes==0,]) # Amount
+nrow(oldRows[oldRows$Votes==0,])/nrow(oldRows) # Percentage
+```
+
+It seems that the ZVD problem has gotten worse, as the most recent 500 debates house more than 40% of all ZVDs despite only being 25% of the dataset.
+
+
+
+#### Characteristics of Zero Vote Debates
+
+ZVDs are less active than debates with votes:
+```{r}
+mean(ZVD$Comments) # ZVD
+mean(nonZVD$Comments) # Non ZVD
+```
+
+ZVDs are more complete than the debates with votes:
+```{r}
+mean(ZVD$Proportion.of.Arguments) # ZVD
+mean(nonZVD$Proportion.of.Arguments) # Non ZVD
+```
+
+ZVDs are longer than debates with votes:
+```{r}
+mean(ZVD$Completed.Arguments) # ZVD
+mean(nonZVD$Completed.Arguments) # Non ZVD
+```
+
+
+
+
